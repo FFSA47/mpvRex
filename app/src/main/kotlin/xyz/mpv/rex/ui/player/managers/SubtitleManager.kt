@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import xyz.mpv.rex.preferences.SubtitlesPreferences
+import xyz.mpv.rex.utils.media.SubtitleEncodingUtils
 import java.io.File
 
 /**
@@ -28,6 +30,7 @@ import java.io.File
 class SubtitleManager(
     private val context: Context,
     private val wyzieRepository: WyzieSearchRepository,
+    private val subtitlesPreferences: SubtitlesPreferences,
     private val scope: CoroutineScope,
     private val onShowToast: (String) -> Unit
 ) {
@@ -77,6 +80,8 @@ class SubtitleManager(
     val externalSubtitles: List<String> get() = _externalSubtitles.toList()
 
     private val mpvPathToUriMap = mutableMapOf<String, String>()
+    private val uriStringToUriMap = mutableMapOf<String, Uri>()
+    private val uriStringToMpvPathMap = mutableMapOf<String, String>()
 
     // ==================== Actions ====================
 
@@ -111,11 +116,23 @@ class SubtitleManager(
 
         scope.launch(Dispatchers.IO) {
             runCatching {
-                val mpvPath = uri.resolveUri(context) ?: uri.toString()
+                val preferredEncoding = subtitlesPreferences.subtitleEncoding.get()
+                val (normalizedPath, _) = SubtitleEncodingUtils.normalizeSubtitleUri(
+                    context,
+                    uri,
+                    preferredEncoding
+                )
+                val mpvPath = if (normalizedPath.startsWith("content://") || normalizedPath.startsWith("file://")) {
+                    uri.resolveUri(context) ?: uri.toString()
+                } else {
+                    normalizedPath
+                }
                 val mode = if (select) "select" else "auto"
                 
-                // Store mapping for reliable physical deletion later
-                mpvPathToUriMap[mpvPath] = uri.toString()
+                // Store mapping for reliable physical deletion and re-encoding later
+                mpvPathToUriMap[mpvPath] = uriString
+                uriStringToUriMap[uriString] = uri
+                uriStringToMpvPathMap[uriString] = mpvPath
                 
                 MPVLib.command("sub-add", mpvPath, mode)
 
@@ -139,6 +156,10 @@ class SubtitleManager(
         }
     }
 
+    fun reloadExternalSubtitlesWithEncoding(newEncoding: String) {
+        SubtitleEncodingUtils.applyEncodingChange(context, newEncoding)
+    }
+
     fun removeSubtitle(id: Int, tracks: List<TrackNode>) {
         scope.launch(Dispatchers.IO) {
             runCatching {
@@ -149,6 +170,12 @@ class SubtitleManager(
                     val originalUriString = mpvPathToUriMap[mpvPath] ?: mpvPath
                     _externalSubtitles.remove(originalUriString)
                     mpvPathToUriMap.remove(mpvPath)
+                    uriStringToUriMap.remove(originalUriString)
+                    uriStringToMpvPathMap.remove(originalUriString)
+
+                    if (mpvPath.contains("converted_subtitles")) {
+                        File(mpvPath).delete()
+                    }
                 }
                 
                 MPVLib.command("sub-remove", id.toString())
@@ -164,6 +191,9 @@ class SubtitleManager(
     fun clearExternalSubtitles() {
         _externalSubtitles.clear()
         mpvPathToUriMap.clear()
+        uriStringToUriMap.clear()
+        uriStringToMpvPathMap.clear()
+        SubtitleEncodingUtils.cleanupConvertedSubtitles(context)
     }
 
     // ==================== Online Search ====================

@@ -106,6 +106,7 @@ import xyz.mpv.rex.presentation.components.SliderItem
 import xyz.mpv.rex.ui.player.controls.components.sheets.toFixed
 import xyz.mpv.rex.ui.preferences.components.SwitchPreference
 import xyz.mpv.rex.ui.theme.spacing
+import xyz.mpv.rex.utils.media.SubtitleEncodingUtils
 
 @Composable
 fun SubtitleSettingsPanel(
@@ -593,6 +594,8 @@ private fun SubtitleMiscellaneousSection(
   }
   val openAtVideoLocation by preferences.openPickerAtVideoLocation.collectAsState()
   val forceLtr by preferences.forceLtr.collectAsState()
+  val subtitleEncoding by preferences.subtitleEncoding.collectAsState()
+  val context = LocalContext.current
 
   val secondarySid by MPVLib.propInt["secondary-sid"].collectAsState()
   val isSecondaryActive = (secondarySid ?: (MPVLib.getPropertyInt("secondary-sid") ?: 0)) > 0
@@ -704,6 +707,26 @@ private fun SubtitleMiscellaneousSection(
         },
         { Text(stringResource(R.string.pref_subtitles_force_ltr_title)) },
         summary = { Text(stringResource(R.string.pref_subtitles_force_ltr_summary)) },
+      )
+      ListPreference(
+        value = subtitleEncoding,
+        onValueChange = { newEncoding ->
+          preferences.subtitleEncoding.set(newEncoding)
+          val codepage = if (newEncoding.isBlank() || newEncoding.equals("auto", ignoreCase = true)) "auto" else newEncoding
+          runCatching {
+            MPVLib.setPropertyString("sub-codepage", codepage)
+            SubtitleEncodingUtils.applyEncodingChange(context, newEncoding)
+          }
+        },
+        values = SubtitleEncodingUtils.ENCODINGS.map { it.code },
+        valueToText = { AnnotatedString(SubtitleEncodingUtils.getDisplayName(it)) },
+        title = { Text(stringResource(R.string.pref_subtitles_encoding_title)) },
+        summary = {
+          Text(
+            SubtitleEncodingUtils.getDisplayName(subtitleEncoding),
+            color = MaterialTheme.colorScheme.outline,
+          )
+        },
       )
     }
 
