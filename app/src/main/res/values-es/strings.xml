@@ -1195,9 +1195,9 @@
     <string name="pref_player_play_in_mini_player">Reproducir audio en el mini reproductor</string>
     <string name="pref_player_play_in_mini_player_summary_on">Al tocar un archivo de audio, la reproducción comienza directamente en la barra inferior del mini reproductor</string>
     <string name="pref_player_play_in_mini_player_summary_off">Al tocar un archivo de audio se abre el reproductor en pantalla completa</string>
-    <string name="pref_player_default_aspect_ratio" {http://schemas.android.com/tools}ignore="MissingTranslation">Relación de aspecto predeterminada</string>
-    <string name="pref_player_remember_aspect_ratio" {http://schemas.android.com/tools}ignore="MissingTranslation">Recordar la relación de aspecto en los videos</string>
-    <string name="pref_player_remember_aspect_ratio_summary" {http://schemas.android.com/tools}ignore="MissingTranslation">Guardar la relación de aspecto utilizada en el reproductor para los videos siguientes</string>
+    <string name="pref_player_default_aspect_ratio">Relación de aspecto predeterminada</string>
+    <string name="pref_player_remember_aspect_ratio">Recordar la relación de aspecto en los videos</string>
+    <string name="pref_player_remember_aspect_ratio_summary">Guardar la relación de aspecto utilizada en el reproductor para los videos siguientes</string>
     <string name="pref_player_remember_long_press_speed_title">Recuerda la velocidad ajustada</string>
     <string name="pref_player_remember_long_press_speed_summary">Utiliza la última velocidad de deslizamiento para las presiones prolongadas siguientes</string>
     <string name="pref_subtitles_force_ltr_title">Forzar dirección LTR</string>
